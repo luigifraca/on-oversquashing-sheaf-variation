@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: CWN project authors 
-@author: On Oversquashing project authors 
+@author: CWN project authors
+@author: On Oversquashing project authors
 """
 
 

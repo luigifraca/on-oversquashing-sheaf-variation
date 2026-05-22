@@ -149,4 +149,3 @@ cbar.ax.tick_params(labelsize=11)
 cbar.ax.set_ylabel('Commute Time', font)
 plt.axis('off')
 plt.savefig("effective_resistance.pdf", bbox_inches='tight')
-

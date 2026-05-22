@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: On Oversquashing project authors 
+@author: On Oversquashing project authors
 """
 
 import sys
@@ -56,7 +56,7 @@ def run_exp(args, dataset, model):
     model = model.to(args['device'])
 
     assert len(data) == args.synth_train_size + args.synth_test_size
-    # 5k for training 
+    # 5k for training
     # 500 for test
     # following Bodnar et al. CW networks
     train_indices = list(range(0, args.synth_train_size))
@@ -92,7 +92,7 @@ def run_exp(args, dataset, model):
     bad_counter = 0
     keep_running = True
     for epoch in range(args['epochs']):
-        train_acc, train_loss, test_acc, test_loss = [], [], [], [] 
+        train_acc, train_loss, test_acc, test_loss = [], [], [], []
 
         #train
         for batch in train_loader:
@@ -100,30 +100,30 @@ def run_exp(args, dataset, model):
             train_acc_batch, train_loss_batch = test(model, batch.to(args.device))
             train_acc.append(train_acc_batch)
             train_loss.append(train_loss_batch)
-  
+
         #test
         for batch in test_loader:
             test_acc_batch, test_losses_batch = test(model, batch.to(args.device))
             test_acc.append(test_acc_batch)
             test_loss.append(test_losses_batch)
-  
-  
-  
+
+
+
         train_acc = np.mean(train_acc)
         train_loss = np.mean(train_loss)
         test_acc = np.mean(test_acc)
         test_loss = np.mean(test_loss)
 
-  
+
         res_dict = {
             'train_acc': train_acc,
             'train_loss': train_loss,
             'test_acc': test_acc,
             'test_loss': test_loss,
         }
-  
+
         wandb.log(res_dict, step=epoch)
-  
+
         new_best_trigger = test_acc > best_test_acc if args[
             'stop_strategy'] == 'acc' else test_loss < best_test_loss
         if new_best_trigger:
@@ -134,7 +134,7 @@ def run_exp(args, dataset, model):
             bad_counter = 0
         else:
             bad_counter += 1
-  
+
         if bad_counter == args['early_stopping']:
             keep_running = False if test_acc < args['min_acc'] else True
             break
@@ -142,12 +142,12 @@ def run_exp(args, dataset, model):
         if test_acc == 1.0:
             print("Perfect accuracy, stopping to save resources.")
             break
-  
+
         scheduler.step(test_acc)
         print(f"Epochs: {epoch} | Best epoch: {best_epoch}")
         print(f"Test acc: {test_acc:.4f}")
         print(f"Best test acc: {best_test_acc:.4f}")
-  
+
     wandb.log({'best_test_acc': test_acc,
               'best_test_acc': best_test_acc, 'best_epoch': best_epoch})
     keep_running = False if test_acc < args['min_acc'] else True
@@ -173,7 +173,7 @@ if __name__ == '__main__':
 
     dataset = build_dataset(args)
     random.shuffle(dataset)
-    
+
     # Add extra arguments
     args.sha = sha
     args.hidden_channels = args.hidden_dim

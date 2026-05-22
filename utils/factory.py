@@ -20,7 +20,7 @@ def build_model(args):
 	        'gat' : GAT,
 	        'sage' : GraphSAGE,
 	     }
-	     
+
 	params = {
 	      'in_channels':args.input_dim,
 	      'hidden_channels':args.hidden_dim,
@@ -48,7 +48,7 @@ def build_dataset(args):
         'arity': args.arity,
         'add_crosses': int(args.add_crosses)
     }
-  
+
     return dataset_factory[args.dataset](**dataset_configs)
 
 
@@ -75,14 +75,14 @@ class NetFactory(torch.nn.Module):
             self.convs.append(GINConv( Sequential(
                                                   Linear(dim_h if i != 0 else dataset.num_node_features, dim_h, bias=False),
                                                   Identity(dim_h), ReLU(),
-                                                  Linear(dim_h, dim_h, bias=False), 
+                                                  Linear(dim_h, dim_h, bias=False),
                                                   ReLU()
                                                  )
                                      )
                              )
 
         self.arch = arch
-        
+
     def forward(self, G):
         h, edge_index = G.x, G.edge_index
         for conv in self.convs:
@@ -90,7 +90,7 @@ class NetFactory(torch.nn.Module):
             h = conv(h, edge_index)
           else:
             for op in conv:
-              try: 
+              try:
                 h = op(h, edge_index)
               except:
                 h = op(h)

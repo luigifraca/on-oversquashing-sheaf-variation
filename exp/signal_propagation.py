@@ -26,12 +26,12 @@ ARCHS = ['gin', 'sage', 'gcn', 'gat']
 def initialize_architecture(arch, layers=10, dim_h=5):
     """
     Initialize an MPNN architecture.
-    
+
     Parameters:
         arch (str): Type of architecture to initialize ('gin', 'sage', 'gcn', 'gat')
         layers (int, optional): Number of layers. Defaults to 10.
         dim_h (int, optional): Dimension. Defaults to 5.
-    
+
     Returns:
         torch.nn.Module: Initialized model
     """
@@ -40,11 +40,11 @@ def initialize_architecture(arch, layers=10, dim_h=5):
 def process_graph_data(dataset_item, arch):
     """
     Process data for a specific graph architecture.
-    
+
     Parameters:
         dataset_item (Data): Torch geometric dataset item.
         arch (str): Type of architecture to use.
-        
+
     Returns:
         list: List of tuples with processed data.
     """

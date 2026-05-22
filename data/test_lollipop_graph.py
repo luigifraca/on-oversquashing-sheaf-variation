@@ -21,7 +21,7 @@ def are_connected(edge_index, node1, node2):
 ])
 def test_generate_lollipop_transfer_graph(nodes, target_label):
     graph = generate_lollipop_transfer_graph(nodes, target_label)
-    
+
     # Check node attributes
     assert torch.equal(graph.x[0], torch.tensor([0.0] * len(target_label), dtype=torch.float32))
     assert torch.equal(graph.x[-1], torch.tensor(target_label, dtype=torch.float32))
@@ -35,14 +35,14 @@ def test_generate_lollipop_transfer_graph(nodes, target_label):
     # Check edges for path
     for i in range(nodes // 2, nodes - 1):
         assert are_connected(graph.edge_index, i, i + 1)
-    
+
     # Check connection between last node of the clique and the first node of the path
     assert are_connected(graph.edge_index, nodes // 2 - 1, nodes // 2)
-    
+
     # Check mask
     assert graph.mask[0]
     assert not graph.mask[1:].any()
-    
+
     # Check y (target label)
     assert graph.y.item() == np.argmax(target_label)
 
@@ -61,10 +61,10 @@ def test_generate_lollipop_transfer_graph(nodes, target_label):
 ])
 def test_generate_lollipop_transfer_graph_dataset(nodes, classes, samples):
     dataset = generate_lollipop_transfer_graph_dataset(nodes, classes, samples)
-    
+
     # Check dataset length
     assert len(dataset) == samples
-    
+
     # Validate graphs in dataset
     for i, graph in enumerate(dataset):
         expected_label = np.zeros(classes)
@@ -194,4 +194,3 @@ def test_node_features_dtype_in_dataset():
     dataset = generate_lollipop_transfer_graph_dataset(5, 5, 100)
     for graph in dataset:
         assert graph.x.dtype == torch.float32
-

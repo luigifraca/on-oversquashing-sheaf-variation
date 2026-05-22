@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: On Oversquashing project authors 
+@author: On Oversquashing project authors
 """
 
 import os
@@ -12,7 +12,7 @@ import scipy.sparse as sp
 from scipy.sparse.linalg import eigsh
 from functorch import vmap
 from torch.utils.data.sampler import  Sampler
-import random 
+import random
 
 
 eps_min = 1e-12
@@ -265,7 +265,7 @@ def reset_wandb_env():
 def namespace_to_command(namespace: str, exp_file: str) -> str:
     namespace = namespace.replace("Namespace(", "").replace(")", "")
     args_split = namespace.split(", ")
-    
+
     args = ""
     filter_out = ["device", "input_dim", "output_dim", "edge_dim", "sha", "index"]
     for arg in args_split:
@@ -286,7 +286,7 @@ class CustomSampler(Sampler[int]):
     def __init__(self, indices : list, train : bool) -> None:
         self.indices = indices
         self.train = train
-        
+
     def __iter__(self):
       if self.train:
         for i in torch.randperm(len(self.indices)):
@@ -300,10 +300,10 @@ class CustomSampler(Sampler[int]):
 
 def smooth_plot(x, y=None, ax=None, label='', halflife=10):
 
-    """ 
+    """
     Function to plot smoothed x VS y graphs.
 
-    Parameters: 
+    Parameters:
     ----------
 
     x - x-axis data.
@@ -322,7 +322,7 @@ def smooth_plot(x, y=None, ax=None, label='', halflife=10):
       y_int = x
     else:
       y_int = y
-    
+
     x_ewm = pd.Series(y_int).ewm(halflife=halflife)
     color = next(plt.gca()._get_lines.prop_cycler)['color']
     if y is None:

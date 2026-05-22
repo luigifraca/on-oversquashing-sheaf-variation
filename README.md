@@ -1,3 +1,11 @@
+# README for the current fork
+
+This implementation aims to develop a simplified NSD code that ca be adapted to oversquashing-dection tasks as described in the paper "On Over-Squashing in Message Passing Neural Networks" and implemented in its original codebase
+
+## TO-DO
+
+mermaid detailed description of the Sheaf Model
+
 # On Over-Squashing in Message Passing Neural Networks
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/lrnzgiusti/on-oversquashing/blob/main/LICENSE) [![arXiv](https://img.shields.io/badge/arXiv-2302.02941-b31b1b.svg?style=flat)](https://arxiv.org/abs/2302.02941)
@@ -7,7 +15,7 @@ This repository contains the official code used for the paper
 **[On Over-Squashing in Message Passing Neural Networks: The Impact of Width, Depth, and Topology](https://arxiv.org/abs/2302.02941) (ICML 2023)**
 
 <p align="center">
-<img src="./assets/effective_resistance.jpg"> 
+<img src="./assets/effective_resistance.jpg">
 </p>
 
 
@@ -35,7 +43,7 @@ The objective is to update the source node's feature to match that of the target
 
 
 <p align="center">
-<img src="./assets/graph-transfer.jpg"> 
+<img src="./assets/graph-transfer.jpg">
 </p>
 
 The validation covers three distinct graph topologies: **CrossedRing**, **Ring**, and **CliquePath**. The hypothesis is that while the specific topology affects performance, for any given topology, enhancing the hidden dimension of the graph neural network should lead to improved performance, especially for larger distances `r`.
@@ -46,7 +54,7 @@ The validation covers three distinct graph topologies: **CrossedRing**, **Ring**
 
 
 <p align="center">
-<img src="./assets/synthetic-graph-hidden-dim.jpg" width="50%">  
+<img src="./assets/synthetic-graph-hidden-dim.jpg" width="50%">
 </p>
 
 
@@ -85,7 +93,7 @@ Accordingly, we expect CrossedRing to be the 'easier' topology, while CliquePath
 
 
 <p align="center">
-<img src="./assets/synthetic-graph-transfer.jpg" width="50%">  
+<img src="./assets/synthetic-graph-transfer.jpg" width="50%">
 </p>
 
 
@@ -95,11 +103,11 @@ Initial results show a predictable behavior across various models including GIN 
 - The Ring task follows CliquePath in difficulty.
 - CrossedRing is relatively easier compared to the other two.
 
-As expected, for some topologies a model achieves perfect accuracy while on others the same model collapses to random guessing. The message here is that what `long-range' means is highly sensitive not only with the given GNN but also, and more importantly, with the graph-topology. 
+As expected, for some topologies a model achieves perfect accuracy while on others the same model collapses to random guessing. The message here is that what `long-range' means is highly sensitive not only with the given GNN but also, and more importantly, with the graph-topology.
 
 ## The impact of topology
 
-[Theorem 5.5](https://arxiv.org/pdf/2302.02941.pdf#theorem.5.5) finds a relationship between the  commute time (effective resistance) of a graph and ease of information propagation in Message Passing Neural Networks (MPNNs). 
+[Theorem 5.5](https://arxiv.org/pdf/2302.02941.pdf#theorem.5.5) finds a relationship between the  commute time (effective resistance) of a graph and ease of information propagation in Message Passing Neural Networks (MPNNs).
 
 
 ### Experiment Details
@@ -117,7 +125,7 @@ The methodology is as follows:
 
 
 <p align="center">
-<img src="./assets/signal_prop.png" width="50%">  
+<img src="./assets/signal_prop.png" width="50%">
 </p>
 
 
@@ -140,7 +148,7 @@ This experiment is applied to each graph `G` within the dataset `D`. The steps i
 
 
 <p align="center">
-<img src="./assets/signal_propagation.png" width="50%">  
+<img src="./assets/signal_propagation.png" width="50%">
 </p>
 
 
