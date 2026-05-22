@@ -24,3 +24,7 @@ env/
 
 # Experiment tracking output
 wandb/
+
+# Additional Toy Data
+data/toy_data
+notebooks/sheaf-notebooks

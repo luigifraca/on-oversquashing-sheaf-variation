@@ -7,26 +7,54 @@ from torch_geometric.utils import degree
 
 from utils.sheaf_utils import validate_edge_index
 
-def build_sheaf_laplacian(N: int, K: int, edge_index: torch.Tensor, maps: torch.Tensor):
+
+def _validate_canonical_undirected_edge_index(edge_index: torch.Tensor) -> None:
+    """Validate one-edge-per-undirected-edge indices with canonical source < target order."""
+    validate_edge_index(edge_index, require_bidirectional=False)
+    if edge_index.numel() > 0 and not torch.all(edge_index[0] < edge_index[1]):
+        raise ValueError("Expected canonical undirected edge_index with source < target in every column.")
+
+
+def canonical_undirected_edge_index(directed_edge_index: torch.Tensor) -> torch.Tensor:
     """
-    Builds a sheaf laplacian given the edge_index and the restriction maps
+    Convert a bidirectional directed edge index into one canonical edge per undirected edge.
+
+    The input must contain both (u, v) and (v, u). The output is sorted
+    lexicographically and always stores each edge as source < target.
+    """
+    validate_edge_index(directed_edge_index, require_unique_edges=True)
+    row, col = directed_edge_index
+    edge_index = directed_edge_index[:, row < col]
+    if edge_index.numel() == 0:
+        return directed_edge_index.new_empty((2, 0))
+
+    width = int(torch.max(edge_index).item()) + 1
+    perm = torch.argsort(edge_index[0] * width + edge_index[1], stable=True)
+    return edge_index[:, perm].contiguous()
+
+
+def build_sheaf_laplacian(N: int, K: int, undirected_edge_index: torch.Tensor, maps: torch.Tensor):
+    """
+    Builds a sheaf laplacian from canonical undirected edges and restriction maps.
 
     Args:
         N: The number of nodes in the graph
         K: The dimensionality of the Stalks
-        edge_index: Edge index of the graph without duplicate edges. We assume that edge i has orientation
-            edge_index[0, i] --> edge_index[1, i].
-        maps: Tensor of shape [edge_index.size(1), 2 (source/target), K, K] containing the restriction maps of the sheaf
+        undirected_edge_index: One edge per undirected edge, sorted as source < target.
+            Edge i has orientation undirected_edge_index[0, i] -> undirected_edge_index[1, i].
+        maps: Tensor of shape [undirected_edge_index.size(1), 2 (source/target), K, K]
+            containing the restriction maps of the sheaf.
     Returns:
         (index, value): The sheaf Laplacian as a sparse matrix of size (N*K, N*K)
     """
-    E = edge_index.size(1)
+    _validate_canonical_undirected_edge_index(undirected_edge_index)
+    E = undirected_edge_index.size(1)
     index = []
     values = []
 
     for e in range(E):
-        source = edge_index[0, e]
-        target = edge_index[1, e]
+        source = undirected_edge_index[0, e]
+        target = undirected_edge_index[1, e]
 
         top_x = e * K
         # Generate the positions in the block matrix
@@ -62,21 +90,27 @@ def sym_matrix_pow(matrix: torch.Tensor, p: float) -> torch.Tensor:
     return matrix_pow
 
 
-def build_norm_sheaf_laplacian(N: int, K: int, edge_index: torch.Tensor, maps: torch.Tensor, augmented: bool = True):
+def build_norm_sheaf_laplacian(
+    N: int,
+    K: int,
+    undirected_edge_index: torch.Tensor,
+    maps: torch.Tensor,
+    augmented: bool = True,
+):
     """
-    Builds a normalised sheaf laplacian given the edge_index and the restriction maps.
+    Builds a normalised sheaf laplacian from canonical undirected edges.
 
     Args:
         N: The number of nodes in the graph
         K: The dimensionality of the Stalks
-        edge_index: Edge index of the graph without duplicate edges. We assume that edge i has orientation
-            edge_index[0, i] --> edge_index[1, i].
-        maps: Tensor of shape [edge_index.size(1), 2 (source/target), K, K] containing the restriction maps of the sheaf
+        undirected_edge_index: One edge per undirected edge, sorted as source < target.
+        maps: Tensor of shape [undirected_edge_index.size(1), 2 (source/target), K, K]
+            containing the restriction maps of the sheaf.
         augmented: Use D* = D + I instead of D.
     Returns:
         (index, value): The normalised sheaf Laplacian as a sparse matrix of size (N*K, N*K)
     """
-    index, values = build_sheaf_laplacian(N, K, edge_index, maps)
+    index, values = build_sheaf_laplacian(N, K, undirected_edge_index, maps)
     block_diag_indices = []
     block_diag_values = []
 
@@ -118,17 +152,20 @@ def dirichlet_energy(L, f, size):
     return energy.item()
 
 
-def get_edge_index_dict(edge_index, undirected=True):
-    """Computes a dictionary mapping the undirected edges in edge_index to an ID."""
-    assert edge_index.size(1) % 2 == 0
+def get_edge_index_dict(directed_edge_index, undirected=True):
+    """Computes a dictionary mapping directed or undirected edge keys to IDs."""
+    if undirected:
+        validate_edge_index(directed_edge_index, require_unique_edges=True)
+    else:
+        validate_edge_index(directed_edge_index, require_bidirectional=False)
 
-    E = edge_index.size(1)
+    E = directed_edge_index.size(1)
     edge_idx_dict = dict()
     next_id = 0
 
     for e in range(E):
-        source = edge_index[0, e].item()
-        target = edge_index[1, e].item()
+        source = directed_edge_index[0, e].item()
+        target = directed_edge_index[1, e].item()
         if undirected:
             edge = tuple(sorted([source, target]))
         else:
@@ -143,8 +180,8 @@ def get_edge_index_dict(edge_index, undirected=True):
 
 
 def compute_incidence_index(edge_index, d):
-    """Computes the indices of a sheaf coboundary matrix from the edge_index of the graph."""
-    assert edge_index.size(1) % 2 == 0
+    """Computes sheaf coboundary indices from a bidirectional directed edge index."""
+    validate_edge_index(edge_index, require_unique_edges=True)
 
     edge_idx_dict = get_edge_index_dict(edge_index)
     index = []
@@ -164,44 +201,53 @@ def compute_incidence_index(edge_index, d):
     return incidence_index
 
 
-def compute_left_right_map_index(edge_index):
-    """Computes indices for lower triangular matrix or full matrix"""
-    validate_edge_index(edge_index)
+def compute_left_right_map_index(directed_edge_index):
+    """
+    Pair opposite directed edge maps and return their canonical undirected edges.
+
+    Args:
+        directed_edge_index: Bidirectional edge_index with both (u, v) and (v, u).
+
+    Returns:
+        left_right_index: Tensor of shape [2, E] where row 0 indexes maps for u -> v
+            and row 1 indexes maps for v -> u, with u < v.
+        undirected_edge_index: Tensor of shape [2, E] containing canonical edges u < v.
+    """
+    validate_edge_index(directed_edge_index, require_unique_edges=True)
     edge_to_idx = dict()
-    for e in range(edge_index.size(1)):
-        source = edge_index[0, e].item()
-        target = edge_index[1, e].item()
+    for e in range(directed_edge_index.size(1)):
+        source = directed_edge_index[0, e].item()
+        target = directed_edge_index[1, e].item()
         edge_to_idx[(source, target)] = e
 
     left_index, right_index = [], []
     row, col = [], []
-    for e in range(edge_index.size(1)):
-        source = edge_index[0, e].item()
-        target = edge_index[1, e].item()
-        if source < target:
-            left_index.append(e)
-            right_index.append(edge_to_idx[(target, source)])
+    for source, target in sorted(edge for edge in edge_to_idx if edge[0] < edge[1]):
+        left_index.append(edge_to_idx[(source, target)])
+        right_index.append(edge_to_idx[(target, source)])
+        row.append(source)
+        col.append(target)
 
-            row.append(source)
-            col.append(target)
-
-    left_index = torch.tensor(left_index, dtype=torch.long, device=edge_index.device)
-    right_index = torch.tensor(right_index, dtype=torch.long, device=edge_index.device)
+    left_index = torch.tensor(left_index, dtype=torch.long, device=directed_edge_index.device)
+    right_index = torch.tensor(right_index, dtype=torch.long, device=directed_edge_index.device)
     left_right_index = torch.vstack([left_index, right_index])
 
-    row = torch.tensor(row, dtype=torch.long, device=edge_index.device)
-    col = torch.tensor(col, dtype=torch.long, device=edge_index.device)
-    new_edge_index = torch.vstack([row, col])
+    row = torch.tensor(row, dtype=torch.long, device=directed_edge_index.device)
+    col = torch.tensor(col, dtype=torch.long, device=directed_edge_index.device)
+    undirected_edge_index = torch.vstack([row, col])
 
-    assert len(left_index) == edge_index.size(1) // 2
+    assert len(left_index) == directed_edge_index.size(1) // 2
 
-    return left_right_index, new_edge_index
+    return left_right_index, undirected_edge_index
 
-def compute_learnable_laplacian_indices(size, edge_index, learned_d, total_d):
-    assert torch.all(edge_index[0] < edge_index[1])
+def compute_learnable_laplacian_indices(size, undirected_edge_index, learned_d, total_d=None):
+    """Computes sparse Laplacian indices from canonical undirected edges."""
+    _validate_canonical_undirected_edge_index(undirected_edge_index)
+    if total_d is None:
+        total_d = learned_d
 
-    row, col = edge_index
-    device = edge_index.device
+    row, col = undirected_edge_index
+    device = undirected_edge_index.device
     row_template = torch.arange(0, learned_d, device=device).view(1, -1, 1).tile(1, 1, learned_d)
     col_template = torch.transpose(row_template, dim0=1, dim1=2)
 

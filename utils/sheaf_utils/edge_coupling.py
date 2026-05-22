@@ -1,6 +1,7 @@
 import torch
 
-def validate_edge_index(edge_index, num_nodes=None, require_bidirectional=True):
+
+def validate_edge_index(edge_index, num_nodes=None, require_bidirectional=True, require_unique_edges=False):
     """Validate the edge_index invariants expected by sheaf Laplacian builders."""
     if edge_index.dim() != 2 or edge_index.size(0) != 2:
         raise ValueError(f"Expected edge_index with shape [2, E], got {tuple(edge_index.shape)}")
@@ -16,8 +17,20 @@ def validate_edge_index(edge_index, num_nodes=None, require_bidirectional=True):
     if torch.any(edge_index[0] == edge_index[1]):
         raise ValueError("edge_index contains self-loops, which are not valid sheaf edges.")
 
+    edge_list = [(int(u), int(v)) for u, v in edge_index.detach().cpu().t().tolist()]
+    edge_pairs = set(edge_list)
+
+    if require_unique_edges and len(edge_pairs) != len(edge_list):
+        seen = set()
+        duplicates = []
+        for edge in edge_list:
+            if edge in seen:
+                duplicates.append(edge)
+            else:
+                seen.add(edge)
+        raise ValueError(f"edge_index contains duplicate directed edges, e.g. {duplicates[:5]}.")
+
     if require_bidirectional:
-        edge_pairs = {(int(u), int(v)) for u, v in edge_index.detach().cpu().t().tolist()}
         missing_reverse = [(u, v) for u, v in edge_pairs if (v, u) not in edge_pairs]
         if missing_reverse:
             raise ValueError(f"edge_index is missing reverse edges, e.g. {missing_reverse[:5]}.")
