@@ -1,7 +1,6 @@
 # torch imports
 import torch
 from torch import nn
-from torch_geometric.utils import degree
 from torch_scatter import scatter_add
 
 # custom imports
@@ -20,17 +19,13 @@ class LaplacianBuilder(nn.Module):
 
         # edge validation
         validate_edge_index(edge_index, num_nodes=size, require_unique_edges=True)
-        self.edges = edge_index.size(1) // 2
         self.edge_index = edge_index
 
         self.normalised = normalised
-        self.device = edge_index.device
         self.augmented = augmented # meaning, when normalising the Laplacian, use an augmented degree matrix that adds self-loops
 
         # Pair directed edge maps and store one canonical edge per undirected edge.
         self.left_right_idx, self.undirected_edge_index = lap.compute_left_right_map_index(edge_index)
-        self.vertex_tril_idx = self.undirected_edge_index
-        self.deg = degree(self.edge_index[0], num_nodes=self.size)
 
 class GeneralLaplacianBuilder(LaplacianBuilder):
     """Learns a multi-dimensional Sheaf Laplacian from data"""
@@ -51,9 +46,9 @@ class GeneralLaplacianBuilder(LaplacianBuilder):
             if self.training:
                 # During training, we perturb the matrices to ensure they have different singular values.
                 # Without this, the gradients of batched_sym_matrix_pow, which uses SVD are non-finite.
-                eps = torch.FloatTensor(self.d).uniform_(-0.001, 0.001).to(device=self.device)
+                eps = torch.empty(self.d, device=diag_maps.device).uniform_(-0.001, 0.001)
             else:
-                eps = torch.zeros(self.d, device=self.device)
+                eps = torch.zeros(self.d, device=diag_maps.device)
 
             to_be_inv_diag_maps = diag_maps + torch.diag(1. + eps).unsqueeze(0) if self.augmented else diag_maps
             d_sqrt_inv = lap.batched_sym_matrix_pow(to_be_inv_diag_maps, -0.5)
