@@ -12,8 +12,8 @@ from .sheaf_models import LocalConcatSheafLearner
 class DiscreteGeneralSheafDiffusion(SheafDiffusion):
     """Learns a multi-dim Sheaf Laplacian from data, performs diffusion"""
 
-    def __init__(self, data, args):
-        super().__init__(data, args)
+    def __init__(self, args):
+        super().__init__(args)
 
         self.lin_right_weights = nn.ModuleList([
             nn.Linear(self.hidden_channels, self.hidden_channels, bias=False)
@@ -34,8 +34,6 @@ class DiscreteGeneralSheafDiffusion(SheafDiffusion):
             for _ in range(self.layers)
         ])
 
-        self.laplacian_builder = self._build_laplacian_builder(self.num_nodes)
-
         self.epsilons = nn.ParameterList([
             nn.Parameter(torch.zeros((self.d, 1)))
             for _ in range(self.layers)
@@ -45,22 +43,30 @@ class DiscreteGeneralSheafDiffusion(SheafDiffusion):
         self.lin12 = nn.Linear(self.hidden_dim, self.hidden_dim)
         self.lin2 = nn.Linear(self.hidden_dim, self.output_dim)
 
-    def _build_laplacian_builder(self, num_nodes):
+    def _build_laplacian_builder(self, num_nodes, edge_index):
         return lb.GeneralLaplacianBuilder(
             num_nodes,
-            self.edge_index,
+            edge_index,
             d=self.d,
             normalised=self.normalised
         )
 
-    def _ensure_laplacian_builder(self, num_nodes):
+    def _ensure_laplacian_builder(self, edge_index, num_nodes):
         if num_nodes <= 0:
             raise ValueError("Cannot run sheaf diffusion on an empty node feature matrix.")
-        if self.num_nodes != num_nodes:
+        edge_index = self._prepare_edge_index(edge_index, num_nodes)
+        same_edge_index = (
+            self.edge_index is not None
+            and self.edge_index.device == edge_index.device
+            and torch.equal(self.edge_index, edge_index)
+        )
+        if self.num_nodes != num_nodes or not same_edge_index:
             self.num_nodes = num_nodes
+            self.edge_index = edge_index
             self.laplacian_builder = None
         if self.laplacian_builder is None or self.laplacian_builder.size != num_nodes:
-            self.laplacian_builder = self._build_laplacian_builder(num_nodes)
+            self.laplacian_builder = self._build_laplacian_builder(num_nodes, edge_index)
+            self.laplacian_builder.train(self.training)
 
     def left_right_linear(self, x, layer, num_nodes):
 
@@ -74,9 +80,9 @@ class DiscreteGeneralSheafDiffusion(SheafDiffusion):
 
         return x
 
-    def forward(self, x):
+    def forward(self, x, edge_index):
         num_nodes = x.size(0)
-        self._ensure_laplacian_builder(num_nodes)
+        self._ensure_laplacian_builder(edge_index, num_nodes)
         self._reset_node_representations(x)
         x = F.dropout(x, p=self.input_dropout, training=self.training)
         x = self.lin1(x)

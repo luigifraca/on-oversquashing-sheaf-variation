@@ -28,3 +28,6 @@ wandb/
 # Additional Toy Data
 data/toy_data
 notebooks/sheaf-notebooks
+
+# Logs and checkpoints
+synthetic_raw_results/

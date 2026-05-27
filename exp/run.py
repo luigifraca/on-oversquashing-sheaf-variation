@@ -51,6 +51,50 @@ def test(model, data):
         losses.append(loss.detach().cpu())
         return accs, losses
 
+
+def build_wandb_run_name(args):
+    dataset_name = args.dataset.lower()
+    if args.dataset == "RING" and args.add_crosses:
+        dataset_name = "crossed-ring"
+
+    parts = [
+        "synthetic",
+        dataset_name,
+        args.model,
+    ]
+    if args.model == "sheaf":
+        parts.append(f"d{args.d}")
+        parts.append("norm" if args.sheaf_normalised else "nonorm")
+    if args.dataset == "TREE":
+        parts.append(f"arity{args.arity}")
+
+    parts.extend([
+        f"h{args.hidden_dim}",
+        f"l{args.mpnn_layers}",
+        f"size{args.synthetic_size}",
+        f"seed{args.seed}",
+    ])
+    return "-".join(parts)
+
+
+def wandb_init_kwargs(args):
+    kwargs = {
+        "project": "on-oversquashing",
+        "config": vars(args),
+        "name": build_wandb_run_name(args),
+    }
+
+    entity = args.entity
+    if entity and entity.lower() != "none":
+        kwargs["entity"] = entity
+
+    wandb_mode = os.environ.get("WANDB_MODE")
+    if wandb_mode:
+        kwargs["mode"] = wandb_mode
+
+    return kwargs
+
+
 def run_exp(args, dataset, model):
     data = dataset
     model = model.to(args['device'])
@@ -148,11 +192,15 @@ def run_exp(args, dataset, model):
         print(f"Test acc: {test_acc:.4f}")
         print(f"Best test acc: {best_test_acc:.4f}")
 
-    wandb.log({'best_test_acc': test_acc,
-              'best_test_acc': best_test_acc, 'best_epoch': best_epoch})
+    wandb.log({
+        'final_test_acc': test_acc,
+        'best_test_acc': best_test_acc,
+        'best_test_loss': best_test_loss,
+        'best_epoch': best_epoch,
+    })
     keep_running = False if test_acc < args['min_acc'] else True
 
-    return test_acc, best_test_acc, keep_running
+    return test_acc, test_loss, keep_running
 
 
 
@@ -182,14 +230,16 @@ if __name__ == '__main__':
     set_seed(args.seed)
 
     results = []
-    wandb.init(project="on-oversquashing", config=vars(args), entity=args.entity)
+    wandb.init(**wandb_init_kwargs(args))
     print(args)
 
     test_acc, test_loss, keep_running = run_exp(
         wandb.config, dataset, model_cls)
     results.append([test_acc, test_loss])
-    test_acc_mean, test_loss_mean = np.mean(results, axis=0) * 100.0
-    test_acc_std = np.sqrt(np.var(results, axis=0)[0]) * 100.0
+    results = np.array(results)
+    test_acc_mean = results[:, 0].mean() * 100.0
+    test_loss_mean = results[:, 1].mean()
+    test_acc_std = np.sqrt(np.var(results[:, 0])) * 100.0
 
 
     wandb_results = {'final_loss': test_loss_mean,

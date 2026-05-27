@@ -5,8 +5,14 @@ metric:
   goal: maximize
 parameters:
   dataset:
-    distribution: constant
-    value: "SYNTH"
+    distribution: categorical
+    values: ["TREE", "RING", "LOLLIPOP"]
+  model:
+    distribution: categorical
+    values: ["gcn", "sage", "gat", "gin", "sheaf"]
+  d:
+    distribution: categorical
+    values: [1, 2, 3, 5]
   hidden_dim:
     distribution: categorical
     values: [16, 32, 64, 128]
@@ -29,9 +35,6 @@ parameters:
   mpnn_layers:
     distribution: categorical
     values: [1,2,3,4,5]
-  mpnn_arch:
-    distribution: categorical
-    values: ['gcn', 'sage', 'gat', 'gin']
   activ:
     distribution: constant
     value: 'relu'

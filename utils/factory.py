@@ -1,18 +1,32 @@
+import torch
 from torch_geometric.nn.models import GIN, GCN, GraphSAGE, GAT
 
 from data.ring_transfer import generate_tree_transfer_graph_dataset
 from data.ring_transfer import generate_ring_transfer_graph_dataset
 from data.ring_transfer import generate_lollipop_transfer_graph_dataset
+from sheaf_main.sheaf_model import DiscreteGeneralSheafDiffusion
 
 
 
 def build_model(args):
-	assert args.model in ['gin', 'gcn', 'gat', 'sage'], ValueError(f'Unknown model {args.model}')
+	assert args.model in ['gin', 'gcn', 'gat', 'sage', 'sheaf'], ValueError(f'Unknown model {args.model}')
 	assert args.input_dim != None, ValueError(f'Invalid input dim')
 	assert args.hidden_dim != None, ValueError(f'Invalid hidden dim')
 	assert args.output_dim != None, ValueError(f'Invalid output dim')
 	assert args.mpnn_layers != None, ValueError(f'Invalid number of mpnn layer')
 	assert args.norm != None, ValueError(f'Invalid normalisation')
+
+	if args.model == 'sheaf':
+		return DiscreteGeneralSheafDiffusion({
+			'd': args.d,
+			'input_dim': args.input_dim,
+			'hidden_channels': args.hidden_dim,
+			'output_dim': args.output_dim,
+			'layers': args.mpnn_layers,
+			'input_dropout': args.input_dropout,
+			'dropout': args.dropout,
+			'normalised': args.sheaf_normalised,
+		})
 
 	models = {
 	        'gin' : GIN,
