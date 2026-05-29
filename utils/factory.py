@@ -1,4 +1,7 @@
 import torch
+from torch import nn
+import torch.nn.functional as F
+from torch_geometric.nn import GATConv, GCNConv, GINConv, SAGEConv
 from torch_geometric.nn.models import GIN, GCN, GraphSAGE, GAT
 
 from data.ring_transfer import generate_tree_transfer_graph_dataset
@@ -85,42 +88,41 @@ def build_dataset(args):
 
 class NetFactory(torch.nn.Module):
     def __init__(self, arch, num_layers, dim_h):
-        super(Net, self).__init__()
-
-        name2arch = {'gcn': GCNConv, 'sage': SAGEConv, 'gat': GATConv, 'gin': GINConv}
-
-        module_list = []
-        self.convs = torch.nn.ModuleList()
-        for i in range(num_layers):
-          if arch != 'gin':
-            self.convs.append(
-                Sequential(name2arch[arch](dim_h if i != 0 else dataset.num_node_features, dim_h, bias=False, root_weight=False),
-                           Identity(dim_h),
-                          ReLU()
-                          )
-            )
-
-          elif arch == 'gin':
-            self.convs.append(GINConv( Sequential(
-                                                  Linear(dim_h if i != 0 else dataset.num_node_features, dim_h, bias=False),
-                                                  Identity(dim_h), ReLU(),
-                                                  Linear(dim_h, dim_h, bias=False),
-                                                  ReLU()
-                                                 )
-                                     )
-                             )
+        super().__init__()
+        if arch not in {'gcn', 'sage', 'gat', 'gin'}:
+            raise ValueError(f'Unknown architecture {arch}')
+        if num_layers <= 0:
+            raise ValueError('num_layers must be positive')
 
         self.arch = arch
+        self.num_layers = num_layers
+        self.dim_h = dim_h
+        self.convs = torch.nn.ModuleList()
+
+    def _build(self, in_channels, device):
+        for layer in range(self.num_layers):
+            layer_in = in_channels if layer == 0 else self.dim_h
+            if self.arch == 'gcn':
+                conv = GCNConv(layer_in, self.dim_h)
+            elif self.arch == 'sage':
+                conv = SAGEConv(layer_in, self.dim_h)
+            elif self.arch == 'gat':
+                conv = GATConv(layer_in, self.dim_h, heads=1, concat=False)
+            else:
+                mlp = nn.Sequential(
+                    nn.Linear(layer_in, self.dim_h),
+                    nn.ReLU(),
+                    nn.Linear(self.dim_h, self.dim_h),
+                )
+                conv = GINConv(mlp)
+            self.convs.append(conv.to(device))
 
     def forward(self, G):
         h, edge_index = G.x, G.edge_index
+        if len(self.convs) == 0:
+            self._build(h.size(-1), h.device)
+
         for conv in self.convs:
-          if self.arch == 'gin':
             h = conv(h, edge_index)
-          else:
-            for op in conv:
-              try:
-                h = op(h, edge_index)
-              except:
-                h = op(h)
+            h = F.relu(h)
         return h
