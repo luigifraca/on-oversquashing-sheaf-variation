@@ -28,10 +28,10 @@ def generate_ring_lookup_graph(nodes:int):
 
     Returns:
     - Data: Torch geometric data structure containing graph details.
-    
+
     Note: This function is currently deprecated.
     """
-    
+
     if nodes <= 1: raise ValueError("Minimum of two nodes required")
     # Generate unique keys and random values for all the nodes except the source node
     keys = np.arange(1, nodes)  # Create an array of unique keys from 1 to nodes-1
@@ -51,7 +51,7 @@ def generate_ring_lookup_graph(nodes:int):
     val = vals[key_idx]  # Corresponding value from the randomized list
 
     # Set the source node's features: all zeros except the chosen key which is set to one-hot encoded value
-    x[0, :] = 0  
+    x[0, :] = 0
     x[0, :oh_keys.shape[1]] = oh_keys[key_idx]  # Assigning one-hot encoded key to source node
 
     # Convert to tensor for PyTorch compatibility
@@ -62,13 +62,13 @@ def generate_ring_lookup_graph(nodes:int):
     for i in range(nodes - 1):
         edge_index.append([i, i + 1])
         edge_index.append([i + 1, i])
-    
+
     # Add the edges to complete the ring
     edge_index.append([0, nodes - 1])
     edge_index.append([nodes - 1, 0])
 
     # Convert to tensor and transpose for Torch Geometric compatibility
-    edge_index = np.array(edge_index, dtype=np.compat.long).T
+    edge_index = np.array(edge_index, dtype=np.int64).T
     edge_index = torch.tensor(edge_index, dtype=torch.long)
 
     # Create a mask to highlight the source node (used later for graph-level predictions)
@@ -116,7 +116,7 @@ def generate_ring_transfer_graph(nodes, target_label, add_crosses: bool):
     # Determine the node directly opposite to the source (node 0) in the ring
     opposite_node = nodes // 2
 
-    # Initialise feature matrix with a uniform feature. 
+    # Initialise feature matrix with a uniform feature.
     # This serves as a placeholder for features of all nodes.
     x = np.ones((nodes, len(target_label)))
 
@@ -133,7 +133,7 @@ def generate_ring_transfer_graph(nodes, target_label, add_crosses: bool):
         # Regular connections that make the ring
         edge_index.append([i, i + 1])
         edge_index.append([i + 1, i])
-        
+
         # Conditionally add cross edges, if desired
         if add_crosses and i < opposite_node:
             # Add edges from a node to its direct opposite
@@ -150,7 +150,7 @@ def generate_ring_transfer_graph(nodes, target_label, add_crosses: bool):
     edge_index.append([nodes - 1, 0])
 
     # Convert edge list to a torch tensor
-    edge_index = np.array(edge_index, dtype=np.compat.long).T
+    edge_index = np.array(edge_index, dtype=np.int64).T
     edge_index = torch.tensor(edge_index, dtype=torch.long)
 
     # Create a mask to identify the target node in the graph. Only the source node (index 0) is marked true.
@@ -179,7 +179,7 @@ def generate_ring_transfer_graph_dataset(nodes:int, add_crosses:bool=False, clas
     """
     if nodes <= 1: raise ValueError("Minimum of two nodes required")
     dataset = []
-    samples_per_class = samples // classes
+    samples_per_class = max(1, samples // classes)
     for i in range(samples):
         label = i // samples_per_class
         target_class = np.zeros(classes)
@@ -203,7 +203,7 @@ def generate_tree_transfer_graph(depth:int, target_label:List[int], arity:int):
     if depth <= 0: raise ValueError("Minimum of depth one")
     # Calculate the total number of nodes based on the tree depth and arity
     num_nodes = int((arity ** (depth + 1) - 1) / (arity - 1))
-    
+
     # Target node is the last node in the tree
     target_node = num_nodes - 1
 
@@ -219,12 +219,12 @@ def generate_tree_transfer_graph(depth:int, target_label:List[int], arity:int):
 
     # To keep track of the current child node while iterating
     last_child_counter = 0
-    
+
     # Loop to generate the edges of the tree
     for i in range(num_nodes - arity ** depth + 1):
         for child in range(1, arity + 1):
             # Ensure we don't exceed the total number of nodes
-            if last_child_counter + child > num_nodes - 1: 
+            if last_child_counter + child > num_nodes - 1:
                 break
 
             # Add edges for the current node and its children
@@ -235,7 +235,7 @@ def generate_tree_transfer_graph(depth:int, target_label:List[int], arity:int):
         last_child_counter += arity
 
     # Convert edge index to torch tensor format
-    edge_index = np.array(edge_index, dtype=np.compat.long).T
+    edge_index = np.array(edge_index, dtype=np.int64).T
     edge_index = torch.tensor(edge_index, dtype=torch.long)
 
     # Create a mask for the root node of the graph
@@ -281,7 +281,8 @@ def generate_lollipop_transfer_graph(nodes:int, target_label:List[int]):
     Returns:
     - Data: Torch geometric data structure containing graph details.
     """
-    if nodes <= 1: raise ValueError("Minimum of two nodes required")    
+    if nodes <= 1: raise ValueError("Minimum of two nodes required")
+    if len(target_label) <= 1: raise ValueError("Minimum of two classes required")
     # Initialize node features. The first node gets 0s, while the last gets the target label
     x = np.ones((nodes, len(target_label)))
     x[0, :] = 0.0
@@ -290,14 +291,13 @@ def generate_lollipop_transfer_graph(nodes:int, target_label:List[int]):
 
     edge_index = []
 
-    # Construct a clique for the first half of the nodes, 
+    # Construct a clique for the first half of the nodes,
     # where each node is connected to every other node except itself
     for i in range(nodes // 2):
         for j in range(nodes // 2):
             if i == j:  # Skip self-loops
                 continue
             edge_index.append([i, j])
-            edge_index.append([j, i])
 
     # Construct a path (a sequence of connected nodes) for the second half of the nodes
     for i in range(nodes // 2, nodes - 1):
@@ -307,9 +307,11 @@ def generate_lollipop_transfer_graph(nodes:int, target_label:List[int]):
     # Connect the last node of the clique to the first node of the path
     edge_index.append([nodes // 2 - 1, nodes // 2])
     edge_index.append([nodes // 2, nodes // 2 - 1])
+    edge_index.append([nodes // 2 - 1, nodes // 2])
+    edge_index.append([nodes // 2, nodes // 2 - 1])
 
     # Convert the edge index list to a torch tensor
-    edge_index = np.array(edge_index, dtype=np.compat.long).T
+    edge_index = np.array(edge_index, dtype=np.int64).T
     edge_index = torch.tensor(edge_index, dtype=torch.long)
 
     # Create a mask to indicate the target node (in this case, the first node)
@@ -318,7 +320,7 @@ def generate_lollipop_transfer_graph(nodes:int, target_label:List[int]):
 
     # Convert the one-hot encoded target label to its corresponding class index
     y = torch.tensor([np.argmax(target_label)], dtype=torch.long)
-    
+
     return Data(x=x, edge_index=edge_index, mask=mask, y=y)
 
 
@@ -335,12 +337,15 @@ def generate_lollipop_transfer_graph_dataset(nodes:int, classes:int=5, samples:i
     - list[Data]: List of Torch geometric data structures.
     """
     if nodes <= 1: raise ValueError("Minimum of two nodes required")
+    if classes <= 0: raise ValueError("Minimum of one class required")
+    if samples <= 0: raise ValueError("Minimum of one sample required")
     dataset = []
     samples_per_class = samples // classes
+    graph_factory = kwargs.get('custom_function', generate_lollipop_transfer_graph)
     for i in range(samples):
-        label = i // samples_per_class
+        label = min(i // samples_per_class, classes - 1)
         target_class = np.zeros(classes)
         target_class[label] = 1.0
-        graph = generate_lollipop_transfer_graph(nodes, target_class)
+        graph = graph_factory(nodes, target_class)
         dataset.append(graph)
     return dataset

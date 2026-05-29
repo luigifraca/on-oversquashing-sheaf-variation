@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import pytest
-from ring_transfer import generate_ring_transfer_graph, generate_ring_transfer_graph_dataset
+from .ring_transfer import generate_ring_transfer_graph, generate_ring_transfer_graph_dataset
 from torch_geometric.data import Data
 
 # Test the return type of the function

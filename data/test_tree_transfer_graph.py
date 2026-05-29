@@ -1,6 +1,6 @@
 import torch
 import pytest
-from ring_transfer import generate_tree_transfer_graph, generate_tree_transfer_graph_dataset
+from .ring_transfer import generate_tree_transfer_graph, generate_tree_transfer_graph_dataset
 from torch_geometric.data import Data
 
 

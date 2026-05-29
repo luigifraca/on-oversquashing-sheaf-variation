@@ -8,12 +8,40 @@ from data.ring_transfer import generate_lollipop_transfer_graph_dataset
 
 
 def build_model(args):
-	assert args.model in ['gin', 'gcn', 'gat', 'sage'], ValueError(f'Unknown model {args.model}')
+	assert args.model in ['gin', 'gcn', 'gat', 'sage', 'nsd'], ValueError(f'Unknown model {args.model}')
 	assert args.input_dim != None, ValueError(f'Invalid input dim')
 	assert args.hidden_dim != None, ValueError(f'Invalid hidden dim')
 	assert args.output_dim != None, ValueError(f'Invalid output dim')
 	assert args.mpnn_layers != None, ValueError(f'Invalid number of mpnn layer')
 	assert args.norm != None, ValueError(f'Invalid normalisation')
+
+	if args.model == 'nsd':
+		try:
+			from sheaf_mpnn import NSDModel, NSDVariant
+		except ImportError as exc:
+			raise ImportError(
+				"Model 'nsd' requires sheaf_mpnn. Use the Python 3.13 "
+				"environment where /Users/luigifracassetti/projects/"
+				"sheaf_mpnn_study is installed in editable mode."
+			) from exc
+
+		variant = NSDVariant[args.sheaf_variant.upper()]
+		return NSDModel(
+			in_channels=args.input_dim,
+			out_channels=args.output_dim,
+			stalk_dim=args.stalk_dim,
+			hidden_dim=args.hidden_dim,
+			num_layers=args.mpnn_layers,
+			variant=variant,
+			alpha=args.sheaf_alpha,
+			add_self_loops=args.sheaf_add_self_loops,
+			orth_strategy=args.sheaf_orth_strategy,
+			rank=args.sheaf_rank,
+			input_dropout=args.input_dropout,
+			dropout=args.dropout,
+			normalize_output=args.sheaf_normalize_output,
+			jknet=args.sheaf_jknet,
+		)
 
 	models = {
 	        'gin' : GIN,

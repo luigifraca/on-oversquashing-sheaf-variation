@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from torch_geometric.data import Data
-from ring_transfer import generate_ring_lookup_graph, generate_ringlookup_graph_dataset
+from .ring_transfer import generate_ring_lookup_graph, generate_ringlookup_graph_dataset
 
 # Test the return type of the function
 def test_return_type():
@@ -106,8 +106,8 @@ def test_generate_ringlookup_graph_dataset_non_empty():
         assert data.x is not None
         assert data.edge_index is not None
 
-# Test the mask generated for each graph. 
-# It should have the correct size and a True value for the target node.  
+# Test the mask generated for each graph.
+# It should have the correct size and a True value for the target node.
 def test_generate_ringlookup_graph_dataset_mask():
     dataset = generate_ringlookup_graph_dataset(5, 5)
     for data in dataset:

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: CWN project authors 
-@author: On Oversquashing project authors 
+@author: CWN project authors
+@author: On Oversquashing project authors
 """
 
 
-from distutils.util import strtobool
 import argparse
 
 
@@ -14,9 +13,15 @@ def str2bool(x):
     if type(x) == bool:
         return x
     elif type(x) == str:
-        return bool(strtobool(x))
+        value = x.lower()
+        if value in {'y', 'yes', 't', 'true', 'on', '1'}:
+            return True
+        if value in {'n', 'no', 'f', 'false', 'off', '0'}:
+            return False
     else:
         raise ValueError(f'Unrecognised type {type(x)}')
+
+    raise ValueError(f'Unrecognised boolean value {x}')
 
 
 def get_parser():
@@ -52,8 +57,26 @@ def get_parser():
                                                       "mean", "min" , "max"],
                                                                 default='sum')
     parser.add_argument('--model',  type=str,
-                        choices=['gcn','gat','sage','gin'], default='gcn')
+                        choices=['gcn','gat','sage','gin','nsd'],
+                        default='gcn')
     parser.add_argument('--mpnn_layers', type=int, default=2)
+    parser.add_argument('--sheaf_variant', type=str,
+                        choices=['diagonal',
+                                 'general',
+                                 'orthogonal',
+                                 'general_attention',
+                                 'orthogonal_attention',
+                                 'low_rank'],
+                        default='general')
+    parser.add_argument('--stalk_dim', type=int, default=4)
+    parser.add_argument('--sheaf_alpha', type=float, default=1.0)
+    parser.add_argument('--sheaf_rank', type=int, default=1)
+    parser.add_argument('--sheaf_orth_strategy', type=str,
+                        choices=['cayley', 'fasth'], default='cayley')
+    parser.add_argument('--sheaf_add_self_loops', type=str2bool, default=True)
+    parser.add_argument('--sheaf_normalize_output', type=str2bool,
+                        default=True)
+    parser.add_argument('--sheaf_jknet', type=str2bool, default=False)
     # Experiment parameters
     parser.add_argument('--dataset', type=str,  choices=['TREE','LOLLIPOP','RING'], default='RING')
     parser.add_argument('--seed', type=int, default=808)
