@@ -1,0 +1,33 @@
+# Python bytecode and test caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local virtual environments
+.venv/
+venv/
+env/
+
+# Local environment/config files
+.env
+.env.*
+!.env.example
+
+# Notebook/editor/OS noise
+.ipynb_checkpoints/
+.DS_Store
+.vscode/
+.idea/
+
+# Experiment tracking output
+wandb/
+
+# Additional Toy Data
+data/toy_data
+notebooks/sheaf-notebooks
+
+# Logs and checkpoints
+synthetic_raw_results/
