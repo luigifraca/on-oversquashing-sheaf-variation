@@ -34,3 +34,6 @@ notebooks/figures/
 # Logs and checkpoints
 synthetic_raw_results/
 signal_propagation_results/
+
+# Notebooks
+notebooks/compare_nsd_results.ipynb
