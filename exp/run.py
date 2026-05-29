@@ -7,6 +7,10 @@
 import sys
 import os
 import random
+import csv
+import fcntl
+from pathlib import Path
+
 import torch
 import torch.nn.functional as F
 import git
@@ -23,28 +27,72 @@ from utils.factory import build_model, build_dataset
 from utils.utils import set_seed, reset_wandb_env
 
 
+def append_results(results_file, row):
+    if results_file is None:
+        return
+
+    path = Path(results_file)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    columns = [
+        'task',
+        'experiment_label',
+        'topology',
+        'dataset',
+        'model',
+        'sheaf_variant',
+        'sheaf_normalize_output',
+        'sheaf_add_self_loops',
+        'stalk_dim',
+        'hidden_dim',
+        'mpnn_layers',
+        'synthetic_size',
+        'distance',
+        'seed',
+        'epochs',
+        'best_acc',
+        'final_acc',
+        'best_loss',
+        'final_loss',
+        'best_epoch',
+        'sha',
+        'wandb_project',
+        'wandb_group',
+        'wandb_run_name',
+    ]
+    with path.open('a+', encoding='utf-8', newline='') as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        handle.seek(0, os.SEEK_END)
+        header = handle.tell() == 0
+        writer = csv.DictWriter(handle, fieldnames=columns)
+        if header:
+            writer.writeheader()
+        writer.writerow({column: row.get(column, '') for column in columns})
+        handle.flush()
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 def train(model, optimizer, data):
     model.train()
     optimizer.zero_grad()
-    out = model(data.x, data.edge_index)[data.mask]
+    logits = model(data.x, data.edge_index)
+    out = logits[data.mask]
     loss = F.cross_entropy(out, data.y)
     loss.backward()
     optimizer.step()
-    del out
+    pred = out.detach().max(1)[1]
+    acc = pred.eq(data.y).sum().item() / data.mask.sum().item()
+    return acc, loss.detach().cpu().item()
 
 
 def test(model, data):
     model.eval()
     with torch.no_grad():
-        logits, accs, losses, preds = model(data.x, data.edge_index), [], [], []
+        logits = model(data.x, data.edge_index)
         mask = data.mask
         pred = logits[mask].max(1)[1]
         acc = pred.eq(data.y).sum().item() / mask.sum().item()
         loss = F.cross_entropy(logits[mask], data.y)
-        preds.append(pred.detach().cpu())
-        accs.append(acc)
-        losses.append(loss.detach().cpu())
-        return accs, losses
+        return acc, loss.detach().cpu().item()
 
 def run_exp(args, dataset, model):
     data = dataset
@@ -87,8 +135,8 @@ def run_exp(args, dataset, model):
 
         #train
         for batch in train_loader:
-            train(model, optimizer, batch.to(args.device))
-            train_acc_batch, train_loss_batch = test(model, batch.to(args.device))
+            batch = batch.to(args.device)
+            train_acc_batch, train_loss_batch = train(model, optimizer, batch)
             train_acc.append(train_acc_batch)
             train_loss.append(train_loss_batch)
 
@@ -163,6 +211,11 @@ def build_wandb_kwargs(args):
 if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
+    if args.torch_num_threads is not None:
+        torch.set_num_threads(args.torch_num_threads)
+    if args.torch_num_interop_threads is not None:
+        torch.set_num_interop_threads(args.torch_num_interop_threads)
+
     repo = git.Repo(search_parent_directories=True)
     sha = repo.head.object.hexsha
     reset_wandb_env()
@@ -180,7 +233,9 @@ if __name__ == '__main__':
     args.sha = sha
     args.hidden_channels = args.hidden_dim
     args.num_layers = args.mpnn_layers
-    args.topology = 'crossed-ring' if args.dataset == 'RING' and args.add_crosses else args.dataset.lower()
+    topology = 'crossed-ring' if args.dataset == 'RING' and args.add_crosses else args.dataset.lower()
+    args.topology = args.topology_label or topology
+    args.distance = args.synthetic_size // 2 + 1 if args.dataset == 'LOLLIPOP' else args.synthetic_size // 2
 
     results = []
     wandb.init(config=vars(args), **build_wandb_kwargs(args))
@@ -203,6 +258,32 @@ if __name__ == '__main__':
                  'best_epoch': best_epoch,
                  'keep_running': keep_running}
     wandb.log(wandb_results)
+    append_results(args.results_file, {
+        'task': 'graph-transfer',
+        'experiment_label': args.experiment_label,
+        'topology': args.topology,
+        'dataset': args.dataset,
+        'model': args.model,
+        'sheaf_variant': args.sheaf_variant if args.model == 'nsd' else '',
+        'sheaf_normalize_output': args.sheaf_normalize_output if args.model == 'nsd' else '',
+        'sheaf_add_self_loops': args.sheaf_add_self_loops if args.model == 'nsd' else '',
+        'stalk_dim': args.stalk_dim if args.model == 'nsd' else '',
+        'hidden_dim': args.hidden_dim,
+        'mpnn_layers': args.mpnn_layers,
+        'synthetic_size': args.synthetic_size,
+        'distance': args.distance,
+        'seed': args.seed,
+        'epochs': args.epochs,
+        'best_acc': best_test_acc_mean,
+        'final_acc': test_acc_mean,
+        'best_loss': best_test_loss_mean,
+        'final_loss': test_loss_mean,
+        'best_epoch': best_epoch,
+        'sha': sha,
+        'wandb_project': args.wandb_project,
+        'wandb_group': args.wandb_group,
+        'wandb_run_name': args.wandb_run_name,
+    })
     wandb.finish()
 
     model_name = args.model

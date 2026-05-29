@@ -1,3 +1,8 @@
+import hashlib
+import json
+import os
+from pathlib import Path
+
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -7,6 +12,33 @@ from torch_geometric.nn.models import GIN, GCN, GraphSAGE, GAT
 from data.ring_transfer import generate_tree_transfer_graph_dataset
 from data.ring_transfer import generate_ring_transfer_graph_dataset
 from data.ring_transfer import generate_lollipop_transfer_graph_dataset
+
+
+def _synthetic_dataset_cache_path(args, dataset_configs):
+    cache_dir = Path(args.synthetic_cache_dir)
+    cache_payload = {
+        'dataset': args.dataset,
+        'synthetic_size': args.synthetic_size,
+        'configs': dataset_configs,
+    }
+    cache_key = hashlib.sha1(
+        json.dumps(cache_payload, sort_keys=True).encode('utf-8')
+    ).hexdigest()[:16]
+    return cache_dir / f'{args.dataset.lower()}_{cache_key}.pt'
+
+
+def _torch_load(path):
+    try:
+        return torch.load(path, weights_only=False)
+    except TypeError:
+        return torch.load(path)
+
+
+def _save_atomic(obj, path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_name(f'.{path.name}.{os.getpid()}.tmp')
+    torch.save(obj, tmp_path)
+    os.replace(tmp_path, path)
 
 
 
@@ -80,6 +112,15 @@ def build_dataset(args):
         'arity': args.arity,
         'add_crosses': int(args.add_crosses)
     }
+
+    if getattr(args, 'cache_synthetic_dataset', False):
+        cache_path = _synthetic_dataset_cache_path(args, dataset_configs)
+        if cache_path.exists():
+            return _torch_load(cache_path)
+
+        dataset = dataset_factory[args.dataset](**dataset_configs)
+        _save_atomic(dataset, cache_path)
+        return dataset
 
     return dataset_factory[args.dataset](**dataset_configs)
 

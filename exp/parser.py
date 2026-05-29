@@ -35,6 +35,8 @@ def get_parser():
     parser.add_argument('--stop_strategy', type=str, choices=['loss', 'acc'],
                                                      default='acc')
     parser.add_argument('--min_acc', type=float, default=0.5)
+    parser.add_argument('--torch_num_threads', type=int, default=None)
+    parser.add_argument('--torch_num_interop_threads', type=int, default=None)
 
     # Model configuration
     parser.add_argument('--input_dim', type=int, default=5)
@@ -91,6 +93,9 @@ def get_parser():
                         choices=['online', 'offline', 'disabled'],
                         default='online')
     parser.add_argument('--wandb_tags', type=str, default='')
+    parser.add_argument('--results_file', type=str, default=None)
+    parser.add_argument('--experiment_label', type=str, default=None)
+    parser.add_argument('--topology_label', type=str, default=None)
 
     # Synthetic experiments settings
     parser.add_argument('--add_crosses', type=str2bool, default=False)
@@ -100,6 +105,10 @@ def get_parser():
     parser.add_argument('--generate_tree', type=str2bool, default=False)
     parser.add_argument('--arity', type=int, default=2)
     parser.add_argument('--num_class', type=int, default=5)
+    parser.add_argument('--cache_synthetic_dataset', type=str2bool,
+                        default=False)
+    parser.add_argument('--synthetic_cache_dir', type=str,
+                        default='data/synthetic_cache')
 
     # wandb settings
     parser.add_argument("--wandb_name", type=str, default=None,)

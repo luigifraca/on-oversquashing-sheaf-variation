@@ -181,7 +181,7 @@ def generate_ring_transfer_graph_dataset(nodes:int, add_crosses:bool=False, clas
     dataset = []
     samples_per_class = max(1, samples // classes)
     for i in range(samples):
-        label = i // samples_per_class
+        label = min(i // samples_per_class, classes - 1)
         target_class = np.zeros(classes)
         target_class[label] = 1.0
         graph = generate_ring_transfer_graph(nodes, target_class, add_crosses)
@@ -261,9 +261,9 @@ def generate_tree_transfer_graph_dataset(depth:int, arity:int, classes:int=5, sa
     - list[Data]: List of Torch geometric data structures.
     """
     dataset = []
-    samples_per_class = samples // classes
+    samples_per_class = max(1, samples // classes)
     for i in range(samples):
-        label = i // samples_per_class
+        label = min(i // samples_per_class, classes - 1)
         target_class = np.zeros(classes)
         target_class[label] = 1.0
         graph = generate_tree_transfer_graph(depth, target_class, arity)
@@ -340,7 +340,7 @@ def generate_lollipop_transfer_graph_dataset(nodes:int, classes:int=5, samples:i
     if classes <= 0: raise ValueError("Minimum of one class required")
     if samples <= 0: raise ValueError("Minimum of one sample required")
     dataset = []
-    samples_per_class = samples // classes
+    samples_per_class = max(1, samples // classes)
     graph_factory = kwargs.get('custom_function', generate_lollipop_transfer_graph)
     for i in range(samples):
         label = min(i // samples_per_class, classes - 1)

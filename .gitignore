@@ -28,11 +28,15 @@ wandb/
 
 # Additional Toy Data
 data/toy_data
+data/tu/
+data/synthetic_cache/
+data/signal_metric_cache/
 notebooks/sheaf-notebooks
 notebooks/figures/
 
 # Logs and checkpoints
 synthetic_raw_results/
+simulation_stats/
 signal_propagation_results/
 
 # Notebooks
