@@ -29,6 +29,8 @@ wandb/
 # Additional Toy Data
 data/toy_data
 notebooks/sheaf-notebooks
+notebooks/figures/
 
 # Logs and checkpoints
 synthetic_raw_results/
+signal_propagation_results/

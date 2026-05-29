@@ -82,7 +82,15 @@ def get_parser():
     parser.add_argument('--seed', type=int, default=808)
     parser.add_argument('--bs', type=int, default=32)
     parser.add_argument('--cuda', type=int, default=0)
-    parser.add_argument('--entity', type=str, default="none")
+    parser.add_argument('--entity', type=str, default=None)
+    parser.add_argument('--wandb_project', type=str,
+                        default='on-oversquashing-transfer')
+    parser.add_argument('--wandb_group', type=str, default=None)
+    parser.add_argument('--wandb_run_name', type=str, default=None)
+    parser.add_argument('--wandb_mode', type=str,
+                        choices=['online', 'offline', 'disabled'],
+                        default='online')
+    parser.add_argument('--wandb_tags', type=str, default='')
 
     # Synthetic experiments settings
     parser.add_argument('--add_crosses', type=str2bool, default=False)
@@ -92,5 +100,8 @@ def get_parser():
     parser.add_argument('--generate_tree', type=str2bool, default=False)
     parser.add_argument('--arity', type=int, default=2)
     parser.add_argument('--num_class', type=int, default=5)
+
+    # wandb settings
+    parser.add_argument("--wandb_name", type=str, default=None,)
 
     return parser
