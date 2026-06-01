@@ -7,4 +7,4 @@ torch==2.8.0
 torch-geometric==2.7.0
 wandb==0.27.0
 
--e ../sheaf_mpnn_study
+sheaf_mpnn @ git+https://github.com/alessioborgi/sheaf-mpnn.git@main

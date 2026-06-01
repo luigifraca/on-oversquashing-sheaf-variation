@@ -55,9 +55,8 @@ def build_model(args):
 			from sheaf_mpnn import NSDModel, NSDVariant
 		except ImportError as exc:
 			raise ImportError(
-				"Model 'nsd' requires sheaf_mpnn. Use the Python 3.13 "
-				"environment where /Users/luigifracassetti/projects/"
-				"sheaf_mpnn_study is installed in editable mode."
+				"Model 'nsd' requires sheaf_mpnn. Install the project "
+				"requirements in a Python 3.13 environment."
 			) from exc
 
 		variant = NSDVariant[args.sheaf_variant.upper()]
