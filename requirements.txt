@@ -6,5 +6,6 @@ seaborn==0.13.2
 torch==2.8.0
 torch-geometric==2.7.0
 wandb==0.27.0
+scikit-learn==1.3.2
 
 sheaf_mpnn @ git+https://github.com/alessioborgi/sheaf-mpnn.git@main
