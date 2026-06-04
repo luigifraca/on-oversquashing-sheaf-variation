@@ -1,0 +1,75 @@
+{
+  "best_by_best_acc": {
+    "url": "https://wandb.ai/luigifracassetti-universit-degli-studi-di-milano-bicocca/on-oversquashing-transfer-RunPod/runs/7mfnd620",
+    "value": 100.0,
+    "wandb_name": "transfer-clique-path-classic-gat-h64-fdim5-dist2-size2-seed43"
+  },
+  "best_by_best_test_acc": {
+    "url": "https://wandb.ai/luigifracassetti-universit-degli-studi-di-milano-bicocca/on-oversquashing-transfer-RunPod/runs/7mfnd620",
+    "value": 1.0,
+    "wandb_name": "transfer-clique-path-classic-gat-h64-fdim5-dist2-size2-seed43"
+  },
+  "best_by_final_acc": {
+    "url": "https://wandb.ai/luigifracassetti-universit-degli-studi-di-milano-bicocca/on-oversquashing-transfer-RunPod/runs/7mfnd620",
+    "value": 100.0,
+    "wandb_name": "transfer-clique-path-classic-gat-h64-fdim5-dist2-size2-seed43"
+  },
+  "best_by_final_test_acc": {
+    "url": "https://wandb.ai/luigifracassetti-universit-degli-studi-di-milano-bicocca/on-oversquashing-transfer-RunPod/runs/7mfnd620",
+    "value": 1.0,
+    "wandb_name": "transfer-clique-path-classic-gat-h64-fdim5-dist2-size2-seed43"
+  },
+  "created_at_utc": "2026-06-04T17:10:24.441132+00:00",
+  "csv_columns": [
+    "wandb_id",
+    "wandb_name",
+    "state",
+    "group",
+    "created_at",
+    "url",
+    "dataset",
+    "model",
+    "synthetic_size",
+    "mpnn_layers",
+    "hidden_dim",
+    "stalk_dim",
+    "sheaf_variant",
+    "sheaf_normalize_output",
+    "sheaf_add_self_loops",
+    "bs",
+    "epochs",
+    "seed",
+    "add_crosses",
+    "num_class",
+    "input_dim",
+    "output_dim",
+    "synth_train_size",
+    "synth_test_size",
+    "experiment_label",
+    "topology_label",
+    "best_acc",
+    "best_epoch",
+    "best_loss",
+    "best_test_acc",
+    "best_test_loss",
+    "final_acc",
+    "final_acc_std",
+    "final_loss",
+    "final_test_acc",
+    "final_test_loss",
+    "test_acc",
+    "test_loss",
+    "train_acc",
+    "train_loss"
+  ],
+  "csv_rows": 420,
+  "entity": "luigifracassetti-universit-degli-studi-di-milano-bicocca",
+  "group": "graph-transfer-paper-classical-vs-sheaf-runpod",
+  "note": "Aggregated from W&B run configs and summaries to avoid downloading RunPod wandb/log directories locally.",
+  "project": "on-oversquashing-transfer-RunPod",
+  "run_count": 420,
+  "source": "wandb_public_api",
+  "state_counts": {
+    "finished": 420
+  }
+}
